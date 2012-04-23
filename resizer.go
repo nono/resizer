@@ -40,14 +40,12 @@ func box(xx int, yy int) image.Rectangle {
 			x = y * w / h
 		}
 
-		fmt.Printf("x=%d y=%d surf=%d x*y/surf=%d\n", x, y, surf, x*y/surf)
 		if x*y/surf < 1 {
 			rect = image.Rect(0, 0, x, y)
 			surf = x * y
 		}
 	}
 
-	fmt.Printf("  (%d, %d) -> (%d, %d)\n", xx, yy, rect.Max.X, rect.Max.Y)
 	return rect
 }
 
