@@ -2,8 +2,17 @@ Resizer
 =======
 
 Resizer is a small command-line utility written in [Go](http://golang.org/).
-It resizes images to a ratio just by expanding it. No deformation or
-interpolation are made on the images.
+
+The primary intended use for resizer is to pad images to a standard 4:3 or 3:2
+ratio so that it could be printed through popular online print services.
+
+Indeed, online photo print services such as apple, negatifplus follow a rather
+stupid logic that leads to loss of image information when supplied with
+non-standard ratio images: they just crop the picture to fit the chosen
+standard ratio.
+
+It nicely selects the closest standard ratio if none is given as an argument.
+Oh, and default "gravity" is not center, so we don't have to crop twice ;-)
 
 
 How to use it?
