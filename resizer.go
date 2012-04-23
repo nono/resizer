@@ -10,30 +10,45 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 )
+
+type Ratio struct {
+	w int
+	h int
+}
 
 var dir string
 var back image.Image
-var width int
-var height int
+var ratios []Ratio
 
-func box(x int, y int) image.Rectangle {
-	rotate := false
-	if (x-y)*(width-height) < 0 {
-		rotate = !rotate
-		x, y = y, x
+func box(xx int, yy int) image.Rectangle {
+	rect := image.ZR
+	surf := -1
+
+	for _, ratio := range ratios {
+		w, h := ratio.w, ratio.h
+		x, y := xx, yy
+
+		if (x-y)*(w-h) < 0 {
+			w, h = h, w
+		}
+
+		if x*h > y*w {
+			y = x * h / w
+		} else {
+			x = y * w / h
+		}
+
+		fmt.Printf("x=%d y=%d surf=%d x*y/surf=%d\n", x, y, surf, x*y/surf)
+		if x*y/surf < 1 {
+			rect = image.Rect(0, 0, x, y)
+			surf = x * y
+		}
 	}
 
-	if x*height > y*width {
-		y = x * height / width
-	} else {
-		x = y * width / height
-	}
-
-	if rotate {
-		x, y = y, x
-	}
-	return image.Rect(0, 0, x, y)
+	fmt.Printf("  (%d, %d) -> (%d, %d)\n", xx, yy, rect.Max.X, rect.Max.Y)
+	return rect
 }
 
 func resize(filename string) {
@@ -73,7 +88,7 @@ func main() {
 	var r string
 	var c string
 	flag.StringVar(&dir, "dir", "resized", "Put the resized images in this directory")
-	flag.StringVar(&r, "ratio", "40:60", "Use this ratio for images (height:width)")
+	flag.StringVar(&r, "ratio", "4:3,3:2", "Use the best ratio from this list")
 	flag.StringVar(&c, "color", "white", "Use this color for padding (white, black or transparent")
 	flag.Parse()
 	args := flag.Args()
@@ -91,7 +106,11 @@ func main() {
 	default:
 		log.Fatal("Unknown color ", c)
 	}
-	fmt.Sscanf(r, "%d:%d", &width, &height)
+	parts := strings.Split(r, ",")
+	ratios = make([]Ratio, len(parts))
+	for i, part := range parts {
+		fmt.Sscanf(part, "%d:%d", &ratios[i].w, &ratios[i].h)
+	}
 	os.MkdirAll(dir, 0755)
 
 	for _, filename := range args {
