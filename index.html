@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- The Time Machine GitHub pages theme was designed and developed by Jon Rohan, on Feb 7, 2012. -->
+<!-- Follow him for fun. http://twitter.com/jonrohan. Tail his code on http://github.com/jonrohan -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <link rel="stylesheet" href="stylesheets/stylesheet.css" media="screen"/>
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css"/>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/script.js"></script>
+
+  <title>Resizer</title>
+  <meta name="description" content="Resizes images to a ratio just by expanding it (no deformation, no interpolation)">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <header>
+      <h1 class="title">Resizer</h1>
+    </header>
+    <div id="container">
+      <p class="tagline">Resizes images to a ratio just by expanding it (no deformation, no interpolation)</p>
+      <div id="main" role="main">
+        <div class="download-bar">
+        <div class="inner">
+          <a href="https://github.com/nono/resizer/tarball/master" class="download-button tar"><span>Download</span></a>
+          <a href="https://github.com/nono/resizer/zipball/master" class="download-button zip"><span>Download</span></a>
+          <a href="https://github.com/nono/resizer" class="code">fork Resizer on GitHub</a>
+        </div>
+        <span class="blc"></span><span class="trc"></span>
+        </div>
+        <article class="markdown-body">
+          <h1>Resizer</h1>
+
+<p>Resizer is a small command-line utility written in <a href="http://golang.org/">Go</a>.</p>
+
+<p>The primary intended use for resizer is to pad images to a standard 4:3 or 3:2
+ratio so that it could be printed through popular online print services.</p>
+
+<p>Indeed, online photo print services such as apple, negatifplus follow a rather
+stupid logic that leads to loss of image information when supplied with
+non-standard ratio images: they just crop the picture to fit the chosen
+standard ratio.</p>
+
+<p>It nicely selects the closest standard ratio if none is given as an argument.
+Oh, and default "gravity" is not center, so we don't have to crop twice ;-)</p>
+
+<h2>How to use it?</h2>
+
+<p><a href="http://golang.org/doc/install">Install Go 1</a> and run this command:</p>
+
+<pre><code>go run resizer.go -dir=resized -color=white -ratio=40:60 image1 image2 ...
+</code></pre>
+
+<h2>Credits</h2>
+
+<p>♡2012 by Bruno Michel. Copying is an act of love. Please copy and share.</p>
+
+<p>Released under the MIT license</p>
+        </article>
+      </div>
+    </div>
+    <footer>
+      <div class="owner">
+      <p><a href="https://github.com/nono" class="avatar"><img src="https://secure.gravatar.com/avatar/52143950e2745d7321b597d2615ca90a?s=30&amp;d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-140.png" width="48" height="48"/></a> <a href="https://github.com/nono">nono</a> maintains <a href="https://github.com/nono/resizer">Resizer</a></p>
+      </div>
+      <div class="creds">
+        <small>This page generated using <a href="https://pages.github.com/">GitHub Pages</a><br/>theme by <a href="http://twitter.com/jonrohan/">Jon Rohan</a></small>
+      </div>
+    </footer>
+  </div>
+  <div class="current-section">
+    <a href="#top">Scroll to top</a>
+    <a href="https://github.com/nono/resizer/tarball/master" class="tar">tar</a><a href="https://github.com/nono/resizer/zipball/master" class="zip">zip</a><a href="" class="code">source code</a>
+    <p class="name"></p>
+  </div>
+
+  
+</body>
+</html>
