@@ -58,6 +58,13 @@ panoramic (5:2)
 
 ```
 
+TODOs & FIXMEs
+--------------
+
+* TODO : have the complementary rectangle somehow like a black&white
+  checkerboard instead of plain white/black to ease cropping
+* TODO : provide max print size at 300dpi 
+* --DONE : use goroutines to parallelize image resizing--
 
 
 How to use it?
