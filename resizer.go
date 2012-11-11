@@ -10,7 +10,9 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 type Ratio struct {
@@ -22,6 +24,8 @@ var dir string
 var back image.Image
 var ratios []Ratio
 
+// box function creates to complementary rectangle for the given image size `xx` and `yy`
+// BUG(box): we always generate an image for the first ratio, not memory efficient
 func box(xx int, yy int) image.Rectangle {
 	rect := image.ZR
 	surf := -1
@@ -30,16 +34,19 @@ func box(xx int, yy int) image.Rectangle {
 		w, h := ratio.w, ratio.h
 		x, y := xx, yy
 
+		// img & ratio orientation fit
 		if (x-y)*(w-h) < 0 {
 			w, h = h, w
 		}
 
+		// complement on the right side
 		if x*h > y*w {
 			y = x * h / w
 		} else {
 			x = y * w / h
 		}
 
+		// select the best available ratio
 		if x*y/surf < 1 {
 			rect = image.Rect(0, 0, x, y)
 			surf = x * y
@@ -49,7 +56,8 @@ func box(xx int, yy int) image.Rectangle {
 	return rect
 }
 
-func resize(filename string) {
+// resize function concatenates the given image with its complementary "bleed"
+func resize(filename string, wg *sync.WaitGroup, runningjobs chan string) {
 	in, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -80,19 +88,29 @@ func resize(filename string) {
 	default:
 		log.Fatal("Unknown format ", format)
 	}
+	<-runningjobs
+	wg.Done()
 }
 
+// main triggers and waits for resizing goroutines
 func main() {
+	var wg sync.WaitGroup
 	var r string
 	var c string
-	flag.StringVar(&dir, "dir", "resized", "Put the resized images in this directory")
-	flag.StringVar(&r, "ratio", "4:3,3:2", "Use the best ratio from this list")
-	flag.StringVar(&c, "color", "white", "Use this color for padding (white, black or transparent")
+	var p int
+
+	flag.StringVar(&dir, "dir", "resized", "Put the resized images in this directory.")
+	flag.StringVar(&r, "ratio", "4:3,3:2,5:4", "Use the best ratio from this list.")
+	flag.StringVar(&c, "color", "white", "Use this color for padding (white, black or transparent.")
+	flag.IntVar(&p, "parallel", runtime.NumCPU(), "Handle images in parallel, defaults to the actuel number of CPU available.")
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 0 {
 		log.Fatal("No images to resize.\n")
 	}
+	
+	runtime.GOMAXPROCS(p)
+	var runningjobs = make(chan string, p)
 
 	switch c {
 	case "white":
@@ -112,7 +130,11 @@ func main() {
 	os.MkdirAll(dir, 0755)
 
 	for _, filename := range args {
-		fmt.Printf("Resizing %s\n", filename)
-		resize(filename)
+		wg.Add(1)
+		runningjobs <- filename
+		fmt.Println("TODO: %s", filename)
+		go resize(filename, &wg, runningjobs)
 	}
+
+	wg.Wait()
 }
