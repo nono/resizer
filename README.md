@@ -61,10 +61,11 @@ panoramic (5:2)
 TODOs & FIXMEs
 --------------
 
+* TODO : use goroutines to parallelize image resizing.
+* TODO : don't do anything if the image has a perfect ratio.
 * TODO : have the complementary rectangle somehow like a black&white
   checkerboard instead of plain white/black to ease cropping
-* TODO : provide max print size at 300dpi 
-* --DONE : use goroutines to parallelize image resizing--
+* TODO : provide max print size at 300dpi
 
 
 How to use it?
