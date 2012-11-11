@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -25,9 +27,8 @@ var back image.Image
 var ratios []Ratio
 
 // box function creates to complementary rectangle for the given image size `xx` and `yy`
-// BUG(box): we always generate an image for the first ratio, not memory efficient
-func box(xx int, yy int) image.Rectangle {
-	rect := image.ZR
+func box(xx int, yy int) (rectx int, recty int, err error) {
+	rectx, recty = 0, 0
 	surf := -1
 
 	for _, ratio := range ratios {
@@ -39,6 +40,10 @@ func box(xx int, yy int) image.Rectangle {
 			w, h = h, w
 		}
 
+		if x*h == y*w {
+			err = errors.New("Perfect fit, doing nothing")
+			continue
+		}
 		// complement on the right side
 		if x*h > y*w {
 			y = x * h / w
@@ -48,12 +53,12 @@ func box(xx int, yy int) image.Rectangle {
 
 		// select the best available ratio
 		if x*y/surf < 1 {
-			rect = image.Rect(0, 0, x, y)
+			rectx, recty = x, y
 			surf = x * y
 		}
 	}
 
-	return rect
+	return rectx, recty, err
 }
 
 // resize function concatenates the given image with its complementary "bleed"
@@ -69,25 +74,33 @@ func resize(filename string, wg *sync.WaitGroup, runningjobs chan string) {
 		log.Fatal(err)
 	}
 
-	rect := box(src.Bounds().Dx(), src.Bounds().Dy())
-	dst := image.NewRGBA(rect)
-	draw.Draw(dst, dst.Bounds(), back, image.ZP, draw.Src)
-	draw.Draw(dst, src.Bounds(), src, image.ZP, draw.Src)
-
-	file := path.Join(dir, path.Base(filename))
-	out, err := os.Create(file)
+	outfile := path.Join(dir, path.Base(filename))
+	out, err := os.Create(outfile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer out.Close()
-	switch format {
-	case "png":
-		png.Encode(out, dst)
-	case "jpeg":
-		jpeg.Encode(out, dst, nil)
-	default:
-		log.Fatal("Unknown format ", format)
+
+	rect := image.ZR
+	rectx, recty, errb := box(src.Bounds().Dx(), src.Bounds().Dy())
+	if errb != nil {
+		io.Copy(in, out)
+	} else {
+		rect = image.Rect(0, 0, rectx, recty)
+		dst := image.NewRGBA(rect)
+		draw.Draw(dst, dst.Bounds(), back, image.ZP, draw.Src)
+		draw.Draw(dst, src.Bounds(), src, image.ZP, draw.Src)
+
+		switch format {
+		case "png":
+			png.Encode(out, dst)
+		case "jpeg":
+			jpeg.Encode(out, dst, nil)
+		default:
+			log.Fatal("Unknown format ", format)
+		}
 	}
+	fmt.Println("•• Done with", filename)
 	<-runningjobs
 	wg.Done()
 }
@@ -108,7 +121,7 @@ func main() {
 	if len(args) == 0 {
 		log.Fatal("No images to resize.\n")
 	}
-	
+
 	runtime.GOMAXPROCS(p)
 	var runningjobs = make(chan string, p)
 
@@ -132,7 +145,7 @@ func main() {
 	for _, filename := range args {
 		wg.Add(1)
 		runningjobs <- filename
-		fmt.Println("TODO: %s", filename)
+		fmt.Println("Bleeding ", filename)
 		go resize(filename, &wg, runningjobs)
 	}
 

@@ -61,11 +61,13 @@ panoramic (5:2)
 TODOs & FIXMEs
 --------------
 
-* TODO : use goroutines to parallelize image resizing.
-* TODO : don't do anything if the image has a perfect ratio.
+* DONE : use goroutines to parallelize image resizing.
+* DONE : don't do anything if the image has a perfect ratio.
+* TODO : add suffix to the bleeded image.
 * TODO : have the complementary rectangle somehow like a black&white
   checkerboard instead of plain white/black to ease cropping
 * TODO : provide max print size at 300dpi
+* TODO : rename to "bleed" instead of "resize".
 
 
 How to use it?
