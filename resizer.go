@@ -99,7 +99,7 @@ func resize(filename string, runningjobs chan int, donejobs chan string) {
 			log.Fatal("Unknown format ", format)
 		}
 	}
-	fmt.Println("•• Done with ", donejob)
+	fmt.Println("•• Done with ", filename)
 	<-runningjobs
 	donejobs <- filename
 }
@@ -123,7 +123,6 @@ func main() {
 	runtime.GOMAXPROCS(p)
 	var runningjobs = make(chan int, p)
 	var donejobs = make(chan string, len(args))
-	var donejob string
 
 	switch c {
 	case "white":
@@ -151,6 +150,6 @@ func main() {
 	}()
 
 	for _, _ = range args {
-		donejob = <-donejobs
+		<-donejobs
 	}
 }
