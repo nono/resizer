@@ -61,47 +61,48 @@ func box(xx int, yy int) (rectx int, recty int, err error) {
 }
 
 // resize function concatenates the given image with its complementary "bleed"
-func resize(filename string, runningjobs chan int, donejobs chan string) {
-	in, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer in.Close()
-
-	src, format, err := image.Decode(in)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	outfile := path.Join(dir, path.Base(filename))
-	out, err := os.Create(outfile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer out.Close()
-
-	rect := image.ZR
-	rectx, recty, errb := box(src.Bounds().Dx(), src.Bounds().Dy())
-	if errb != nil {
-		io.Copy(in, out)
-	} else {
-		rect = image.Rect(0, 0, rectx, recty)
-		dst := image.NewRGBA(rect)
-		draw.Draw(dst, dst.Bounds(), back, image.ZP, draw.Src)
-		draw.Draw(dst, src.Bounds(), src, image.ZP, draw.Src)
-
-		switch format {
-		case "png":
-			png.Encode(out, dst)
-		case "jpeg":
-			jpeg.Encode(out, dst, nil)
-		default:
-			log.Fatal("Unknown format ", format)
+func resize(running chan string, done chan string) {
+	for {
+		filename := <-running
+		in, err := os.Open(filename)
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		src, format, err := image.Decode(in)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		outfile := path.Join(dir, path.Base(filename))
+		out, err := os.Create(outfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		rect := image.ZR
+		rectx, recty, errb := box(src.Bounds().Dx(), src.Bounds().Dy())
+		if errb != nil {
+			io.Copy(in, out)
+		} else {
+			rect = image.Rect(0, 0, rectx, recty)
+			dst := image.NewRGBA(rect)
+			draw.Draw(dst, dst.Bounds(), back, image.ZP, draw.Src)
+			draw.Draw(dst, src.Bounds(), src, image.ZP, draw.Src)
+
+			switch format {
+			case "png":
+				png.Encode(out, dst)
+			case "jpeg":
+				jpeg.Encode(out, dst, nil)
+			default:
+				log.Fatal("Unknown format ", format)
+			}
+		}
+		done <- filename
+		out.Close()
+		in.Close()
 	}
-	fmt.Println("•• Done with ", filename)
-	<-runningjobs
-	donejobs <- filename
 }
 
 // main triggers and waits for resizing goroutines
@@ -113,16 +114,12 @@ func main() {
 	flag.StringVar(&dir, "dir", "resized", "Put the resized images in this directory.")
 	flag.StringVar(&r, "ratio", "4:3,3:2,5:4", "Use the best ratio from this list.")
 	flag.StringVar(&c, "color", "white", "Use this color for padding (white, black or transparent.")
-	flag.IntVar(&p, "parallel", runtime.NumCPU(), "Handle images in parallel, defaults to the actuel number of CPU available.")
+	flag.IntVar(&p, "parallel", runtime.NumCPU(), "Handle images in parallel, defaults to the actual number of CPUs available.")
 	flag.Parse()
 	args := flag.Args()
 	if len(args) == 0 {
 		log.Fatal("No images to resize.\n")
 	}
-
-	runtime.GOMAXPROCS(p)
-	var runningjobs = make(chan int, p)
-	var donejobs = make(chan string, len(args))
 
 	switch c {
 	case "white":
@@ -141,15 +138,23 @@ func main() {
 	}
 	os.MkdirAll(dir, 0755)
 
+	running := make(chan string)
+	done := make(chan string)
+	runtime.GOMAXPROCS(p)
+
+	for i := 0; i < p; i++ {
+		go resize(running, done)
+	}
+
 	go func() {
-		for job, filename := range args {
-			runningjobs <- job
+		for _, filename := range args {
+			running <- filename
 			fmt.Println("Bleeding ", filename)
-			go resize(filename, runningjobs, donejobs)
 		}
 	}()
 
 	for _, _ = range args {
-		<-donejobs
+		filename := <-done
+		fmt.Println("•• Done with ", filename)
 	}
 }
