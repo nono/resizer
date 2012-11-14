@@ -142,11 +142,13 @@ func main() {
 	}
 	os.MkdirAll(dir, 0755)
 
-	for job, filename := range args {
-		runningjobs <- job
-		fmt.Println("Bleeding ", filename)
-		go resize(filename, runningjobs, donejobs)
-	}
+	go func() {
+		for job, filename := range args {
+			runningjobs <- job
+			fmt.Println("Bleeding ", filename)
+			go resize(filename, runningjobs, donejobs)
+		}
+	}()
 
 	for _, _ = range args {
 		donejob = <-donejobs
