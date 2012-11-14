@@ -14,7 +14,6 @@ import (
 	"path"
 	"runtime"
 	"strings"
-	"sync"
 )
 
 type Ratio struct {
@@ -62,7 +61,7 @@ func box(xx int, yy int) (rectx int, recty int, err error) {
 }
 
 // resize function concatenates the given image with its complementary "bleed"
-func resize(filename string, wg *sync.WaitGroup, runningjobs chan string) {
+func resize(filename string, runningjobs chan int, donejobs chan string) {
 	in, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -100,14 +99,13 @@ func resize(filename string, wg *sync.WaitGroup, runningjobs chan string) {
 			log.Fatal("Unknown format ", format)
 		}
 	}
-	fmt.Println("•• Done with", filename)
+	fmt.Println("•• Done with ", donejob)
 	<-runningjobs
-	wg.Done()
+	donejobs <- filename
 }
 
 // main triggers and waits for resizing goroutines
 func main() {
-	var wg sync.WaitGroup
 	var r string
 	var c string
 	var p int
@@ -123,7 +121,9 @@ func main() {
 	}
 
 	runtime.GOMAXPROCS(p)
-	var runningjobs = make(chan string, p)
+	var runningjobs = make(chan int, p)
+	var donejobs = make(chan string, len(args))
+	var donejob string
 
 	switch c {
 	case "white":
@@ -142,12 +142,13 @@ func main() {
 	}
 	os.MkdirAll(dir, 0755)
 
-	for _, filename := range args {
-		wg.Add(1)
-		runningjobs <- filename
+	for job, filename := range args {
+		runningjobs <- job
 		fmt.Println("Bleeding ", filename)
-		go resize(filename, &wg, runningjobs)
+		go resize(filename, runningjobs, donejobs)
 	}
 
-	wg.Wait()
+	for _, _ = range args {
+		donejob = <-donejobs
+	}
 }
